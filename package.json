@@ -1,12 +1,23 @@
 {
-  "name": "teleprompt-mre",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-	"build": "tsc -p ./tsconfig.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC"
+	"name": "teleprompt-mre",
+	"version": "1.0.0",
+	"description": "Feed your lines into VR",
+	"repository": {
+		"type": "git",
+		"url": "git@github.com:stevenvergenz/teleprompt-mre.git"
+	},
+	"main": "built/index.js",
+	"scripts": {
+		"build": "tsc -p ./tsconfig.json",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Steven Vergenz",
+	"license": "MIT",
+	"dependencies": {
+		"@microsoft/mixed-reality-extension-sdk": "^0.13.1"
+	},
+	"devDependencies": {
+		"@types/node": "^12.7.7",
+		"typescript": "^3.6.3"
+	}
 }

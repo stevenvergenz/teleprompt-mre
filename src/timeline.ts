@@ -1,6 +1,7 @@
 import { promisify } from 'util';
 import { readFile } from 'fs';
 const readFileP = promisify(readFile);
+import { resolve } from 'path';
 
 const timePerWord = 0.5;
 const timePerPunctuation = 0.2;
@@ -10,15 +11,16 @@ type TimelineEvent = {
 	time: number;
 	line: string;
 	next?: TimelineEvent;
+	prev?: TimelineEvent;
 };
 
 export default class Timeline {
-	/** map script time to line number */
 	private timeline: TimelineEvent[] = [];
 	public runtime = 0;
 
 	public async load(path: string) {
-		const rawScript = await readFileP('../public/test.md', { encoding: 'utf8' });
+		const rawScript = await readFileP(
+			resolve(__dirname, '../public/test.md'), { encoding: 'utf8' });
 		const words = rawScript.split(/\s+/);
 
 		let line = '';
@@ -26,17 +28,19 @@ export default class Timeline {
 		let lastEvent: TimelineEvent;
 		for (const word of words) {
 			if (line.length + word.length + 1 >= lineLength) {
-				this.timeline.push({ time: this.runtime, line });
+				const newEvent = { time: this.runtime, line } as TimelineEvent;
+				this.timeline.push(newEvent);
 				this.runtime += lineDuration;
 				if (lastEvent) {
-					lastEvent.next = this.timeline[this.timeline.length - 1];
+					newEvent.prev = lastEvent;
+					lastEvent.next = newEvent;
 				}
 
 				line = '';
 				lineDuration = 0;
 			}
 
-			line += ' ' + word;
+			line += line.length === 0 ? word : (' ' + word);
 			lineDuration += timePerWord;
 
 			if (/[.,;!?]/.test(word)) {
