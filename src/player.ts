@@ -89,7 +89,6 @@ export default class Player {
 			this._playhead = evt.time;
 		}
 
-		console.log(`text: "${evt.line}", next: "${evt.next && evt.next.line}", prev: "${evt.prev && evt.prev.line}"`);
 		this.lines.current.text.contents = evt.line;
 
 		if (evt.prev) {
@@ -100,7 +99,6 @@ export default class Player {
 
 		if (evt.next) {
 			this.lines.next.text.contents = evt.next.line;
-			console.log('setting timeout for', evt.next.time - this.playhead);
 			this.updateTimeout = setTimeout(
 				() => this.play(evt.next),
 				(evt.next.time - this.playhead) * 1000
