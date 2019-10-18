@@ -7,14 +7,14 @@ const timePerWord = 0.5;
 const timePerPunctuation = 0.2;
 const lineLength = 30;
 
-type TimelineEvent = {
+export type TimelineEvent = {
 	time: number;
 	line: string;
 	next?: TimelineEvent;
 	prev?: TimelineEvent;
 };
 
-export default class Timeline {
+export class Timeline {
 	private timeline: TimelineEvent[] = [];
 	public runtime = 0;
 
