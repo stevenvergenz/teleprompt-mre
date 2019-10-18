@@ -3,9 +3,9 @@ import { readFile } from 'fs';
 const readFileP = promisify(readFile);
 import { resolve } from 'path';
 
-const timePerWord = 0.5;
-const timePerPunctuation = 0.2;
-const lineLength = 30;
+const timePerWord = 0.4;
+const timePerPunctuation = 0.1;
+const lineLength = 40;
 
 export type TimelineEvent = {
 	time: number;
@@ -38,6 +38,7 @@ export class Timeline {
 
 				line = '';
 				lineDuration = 0;
+				lastEvent = newEvent;
 			}
 
 			line += line.length === 0 ? word : (' ' + word);
@@ -48,8 +49,13 @@ export class Timeline {
 			}
 		}
 
-		this.timeline.push({ time: this.runtime, line });
+		const newEvent = { time: this.runtime, line } as TimelineEvent;
+		this.timeline.push(newEvent);
 		this.runtime += lineDuration;
+		if (lastEvent) {
+			newEvent.prev = lastEvent;
+			lastEvent.next = newEvent;
+		}
 	}
 
 	public at(time: number) {
