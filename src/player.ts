@@ -84,6 +84,7 @@ export default class Player {
 			evt = this.timeline.at(this.playhead);
 		} else if (typeof arg === 'number') {
 			evt = this.timeline.at(arg);
+			this._playhead = arg;
 		} else {
 			evt = arg;
 			this._playhead = evt.time;
