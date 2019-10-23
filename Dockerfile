@@ -1,20 +1,14 @@
 FROM node:10.16-alpine
 WORKDIR /opt/mre
 
-COPY headerdump.js ./headerdump.js
+COPY package*.json ./
+RUN ["npm", "ci", "--unsafe-perm"]
+
+COPY public ./public/
+
+COPY tsconfig.json ./
+COPY src/*.ts ./src/
+RUN ["npm", "run", "build"]
+
 EXPOSE 3901/tcp
-CMD ["node", "headerdump.js"]
-
-#RUN apt-get update && apt-get install git
-
-#COPY package*.json ./
-#RUN ["npm", "install", "--unsafe-perm"]
-
-#COPY tsconfig.json ./
-#COPY src ./src/
-#RUN ["npm", "run", "build"]
-
-#COPY public ./public/
-
-#EXPOSE 3901/tcp
-#CMD ["npm", "start"]
+CMD ["npm", "start"]
