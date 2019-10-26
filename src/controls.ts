@@ -8,22 +8,14 @@ export default class Controls {
 	public constructor(private app: App, root?: MRE.Actor) {
 		this.assets = new MRE.AssetContainer(this.app.context);
 
-		const playPause = MRE.Actor.Create(this.app.context, {
-			actor: {
-				name: 'playpause',
-				parentId: root && root.id,
-				text: {
-					contents: '||>',
-					height: 0.1,
-					anchor: MRE.TextAnchorLocation.MiddleCenter
-				},
-				collider: {
-					geometry: {
-						shape: 'box',
-						size: { x: 0.15, y: 0.1, z: 0.01 }
-					}
+		this.assets.loadGltf(`${this.app.baseUrl}/controls.gltf`, 'box')
+		.then(() => {
+			MRE.Actor.CreateFromPrefab(this.app.context, {
+				prefab: this.assets.prefabs[0],
+				actor: {
+					parentId: root.id
 				}
-			}
+			})
 		});
 	}
 }
