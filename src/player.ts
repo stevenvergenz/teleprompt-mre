@@ -6,6 +6,22 @@ import { TimelineEvent } from './timeline';
 export default class Player {
 	private _playhead = 0;
 	public get playhead() { return this._playhead; }
+	public set playhead(val) {
+		this._playhead = val;
+		if (this.updateTimeout !== null) {
+			this.play();
+		}
+	}
+
+	private _speedMultiplier = 1;
+	public get speedMultiplier() { return this._speedMultiplier; }
+	public set speedMultiplier(val) {
+		this._speedMultiplier = Math.max(0.25, Math.min(4, val));
+		if (this.updateTimeout !== null) {
+			this.play();
+		}
+	}
+
 	private get timeline() { return this.app.timeline; }
 
 	private animRoot: MRE.Actor;
@@ -14,7 +30,7 @@ export default class Player {
 		next: MRE.Actor,
 		prev: MRE.Actor
 	};
-	private updateTimeout: NodeJS.Timeout;
+	private updateTimeout: NodeJS.Timeout = null;
 
 	public constructor(private app: App, root?: MRE.Actor) {
 		const bgAssets = new MRE.AssetContainer(this.app.context);
@@ -100,9 +116,12 @@ export default class Player {
 
 		if (evt.next) {
 			this.lines.next.text.contents = evt.next.line;
+			if (this.updateTimeout) {
+				clearTimeout(this.updateTimeout);
+			}
 			this.updateTimeout = setTimeout(
 				() => this.play(evt.next),
-				(evt.next.time - this.playhead) * 1000
+				(evt.next.time - this.playhead) / this.speedMultiplier * 1000
 			);
 		} else {
 			this.lines.next.text.contents = '';
@@ -111,5 +130,6 @@ export default class Player {
 
 	public pause(): void {
 		clearTimeout(this.updateTimeout);
+		this.updateTimeout = null;
 	}
 }
