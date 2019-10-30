@@ -21,7 +21,7 @@ export default class App {
 	private async started() {
 		this.timeline = new Timeline();
 		this.player = new Player(this);
-		this.controls = new Controls(this, { transform: { local: { position: { x: -3 } } } });
+		this.controls = new Controls(this);
 
 		await this.timeline.load('../public/test.md');
 		// this.player.play(0);

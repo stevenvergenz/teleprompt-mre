@@ -7,16 +7,24 @@ export default class Controls {
 
 	private get player() { return this.app.player; }
 
-	public constructor(private app: App, actorDef?: Partial<MRE.ActorLike>) {
+	public constructor(private app: App) {
 		this.assets = new MRE.AssetContainer(this.app.context);
-		this.buildControls(actorDef).catch(err => console.error(err));
+		this.buildControls().catch(err => console.error(err));
 	}
 
-	private async buildControls(actorDef?: Partial<MRE.ActorLike>) {
+	private async buildControls() {
 		await this.assets.loadGltf(`${this.app.baseUrl}/controls.gltf`, 'box');
 		const root = MRE.Actor.CreateFromPrefab(this.app.context, {
 			prefab: this.assets.prefabs[0],
-			actor: actorDef
+			actor: {
+				transform: {
+					local: {
+						position: { x: 2.4 },
+						rotation: MRE.Quaternion.FromEulerAngles(0, Math.PI, 0),
+						scale: { x: 1.5, y: 1.5, z: 1.5 }
+					}
+				}
+			}
 		});
 		await root.created();
 
@@ -30,15 +38,29 @@ export default class Controls {
 		const skipForward = skip.findChildrenByName('SkipForward', false)[0];
 
 		// add labels
-		speed.enableText({
-			contents: this.formatPercent(this.player.speedMultiplier),
-			height: 0.07,
-			anchor: MRE.TextAnchorLocation.MiddleCenter
+		MRE.Actor.Create(this.app.context, {
+			actor: {
+				name: 'label',
+				parentId: speed.id,
+				transform: { local: { rotation: MRE.Quaternion.FromEulerAngles(0, Math.PI, 0) } },
+				text: {
+					contents: this.formatPercent(this.player.speedMultiplier),
+					height: 0.07,
+					anchor: MRE.TextAnchorLocation.MiddleCenter
+				}
+			}
 		});
-		skip.enableText({
-			contents: this.formatTime(this.player.playhead),
-			height: 0.07,
-			anchor: MRE.TextAnchorLocation.MiddleCenter
+		MRE.Actor.Create(this.app.context, {
+			actor: {
+				name: 'label',
+				parentId: skip.id,
+				transform: { local: { rotation: MRE.Quaternion.FromEulerAngles(0, Math.PI, 0) } },
+				text: {
+					contents: this.formatTime(this.player.playhead),
+					height: 0.07,
+					anchor: MRE.TextAnchorLocation.MiddleCenter
+				}
+			}
 		});
 
 		// add handlers
