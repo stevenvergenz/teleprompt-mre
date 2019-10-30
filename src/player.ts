@@ -8,7 +8,7 @@ export default class Player {
 	public get playhead() { return this._playhead; }
 	public set playhead(val) {
 		this._playhead = val;
-		if (this.updateTimeout !== null) {
+		if (this.isPlaying) {
 			this.play();
 		}
 	}
@@ -17,10 +17,12 @@ export default class Player {
 	public get speedMultiplier() { return this._speedMultiplier; }
 	public set speedMultiplier(val) {
 		this._speedMultiplier = Math.max(0.25, Math.min(4, val));
-		if (this.updateTimeout !== null) {
+		if (this.isPlaying) {
 			this.play();
 		}
 	}
+
+	public get isPlaying() { return this.updateTimeout !== null; }
 
 	private get timeline() { return this.app.timeline; }
 

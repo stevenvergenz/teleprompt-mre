@@ -2,10 +2,12 @@ import * as MRE from '@microsoft/mixed-reality-extension-sdk';
 
 import Player from './player';
 import { Timeline } from './timeline';
+import Controls from './controls';
 
 export default class App {
 	public timeline: Timeline;
 	public player: Player;
+	public controls: Controls;
 
 	constructor(
 		public context: MRE.Context,
@@ -19,9 +21,10 @@ export default class App {
 	private async started() {
 		this.timeline = new Timeline();
 		this.player = new Player(this);
+		this.controls = new Controls(this, { transform: { local: { position: { x: -3 } } } });
 
 		await this.timeline.load('../public/test.md');
-		this.player.play(0);
+		// this.player.play(0);
 	}
 
 	private userJoined(user: MRE.User) {
