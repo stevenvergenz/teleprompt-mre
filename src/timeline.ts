@@ -18,9 +18,28 @@ export class Timeline {
 	private timeline: TimelineEvent[] = [];
 	public runtime = 0;
 
-	public async load(path: string) {
+	private _loaded: Promise<void>;
+	private loadResolvedCallback: (value?: void | PromiseLike<void>) => void;
+	private loadRejectedCallback: (reason?: any) => void;
+	public get loaded() { return this._loaded; }
+
+	public constructor() {
+		this._loaded = new Promise<void>((resolve, reject) => {
+			this.loadResolvedCallback = resolve;
+			this.loadRejectedCallback = reject;
+		});
+	}
+
+	public load(path: string) {
+		this._load(path)
+			.then(this.loadResolvedCallback)
+			.catch(this.loadRejectedCallback);
+		return this.loaded;
+	}
+
+	private async _load(path: string) {
 		const rawScript = await readFileP(
-			resolve(__dirname, '../public/test.md'), { encoding: 'utf8' });
+			resolve(__dirname, path), { encoding: 'utf8' });
 		const words = rawScript.split(/\s+/);
 
 		let line = '';

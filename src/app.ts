@@ -18,13 +18,12 @@ export default class App {
 		this.context.onUserJoined(user => this.userJoined(user));
 	}
 
-	private async started() {
+	private started() {
 		this.timeline = new Timeline();
 		this.player = new Player(this);
 		this.controls = new Controls(this);
 
-		await this.timeline.load('../public/test.md');
-		// this.player.play(0);
+		this.timeline.load('../public/test.md');
 	}
 
 	private userJoined(user: MRE.User) {

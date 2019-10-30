@@ -5,11 +5,22 @@ import { TimelineEvent } from './timeline';
 
 export default class Player {
 	private _playhead = 0;
-	public get playhead() { return this._playhead; }
+	/** The server timestamp when the current frame started */
+	private _basisTime = 0;
+	public get playhead() {
+		let offset = 0;
+		if (this._basisTime > 0) {
+			offset = (Date.now() - this._basisTime) * this.speedMultiplier / 1000;
+		}
+		return this._playhead + offset;
+	}
 	public set playhead(val) {
-		this._playhead = val;
+		this._playhead = Math.max(0, Math.min(this.timeline.runtime, val));
+		this._basisTime = 0;
 		if (this.isPlaying) {
 			this.play();
+		} else {
+			this.updateText(this.timeline.at(this._playhead));
 		}
 	}
 
@@ -18,11 +29,13 @@ export default class Player {
 	public set speedMultiplier(val) {
 		this._speedMultiplier = Math.max(0.25, Math.min(4, val));
 		if (this.isPlaying) {
-			this.play();
+			this.play(this.playhead);
 		}
 	}
 
-	public get isPlaying() { return this.updateTimeout !== null; }
+	public get isPlaying() {
+		return this.updateTimeout !== null && this._basisTime !== 0;
+	}
 
 	private get timeline() { return this.app.timeline; }
 
@@ -91,6 +104,8 @@ export default class Player {
 				}
 			})
 		};
+
+		this.timeline.loaded.then(() => this.updateText(this.timeline.at(0)));
 	}
 
 	public play(): void;
@@ -107,7 +122,31 @@ export default class Player {
 			evt = arg;
 			this._playhead = evt.time;
 		}
+		this._basisTime = Date.now() - (this._playhead - evt.time) / this.speedMultiplier * 1000;
 
+		this.updateText(evt);
+
+		if (this.updateTimeout) {
+			clearTimeout(this.updateTimeout);
+			this.updateTimeout = null;
+		}
+		if (evt.next) {
+			this.updateTimeout = setTimeout(
+				() => this.play(evt.next),
+				(evt.next.time - this._playhead) / this.speedMultiplier * 1000
+			);
+		} else {
+			this._basisTime = 0;
+		}
+	}
+
+	public pause(): void {
+		clearTimeout(this.updateTimeout);
+		this.updateTimeout = null;
+		this._basisTime = 0;
+	}
+
+	private updateText(evt: TimelineEvent) {
 		this.lines.current.text.contents = evt.line;
 
 		if (evt.prev) {
@@ -118,20 +157,8 @@ export default class Player {
 
 		if (evt.next) {
 			this.lines.next.text.contents = evt.next.line;
-			if (this.updateTimeout) {
-				clearTimeout(this.updateTimeout);
-			}
-			this.updateTimeout = setTimeout(
-				() => this.play(evt.next),
-				(evt.next.time - this.playhead) / this.speedMultiplier * 1000
-			);
 		} else {
 			this.lines.next.text.contents = '';
 		}
-	}
-
-	public pause(): void {
-		clearTimeout(this.updateTimeout);
-		this.updateTimeout = null;
 	}
 }

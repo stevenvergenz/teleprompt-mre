@@ -4,8 +4,10 @@ import App from './app';
 
 export default class Controls {
 	private assets: MRE.AssetContainer;
-
+	private speedLabel: MRE.Text;
+	private timeLabel: MRE.Text;
 	private get player() { return this.app.player; }
+
 
 	public constructor(private app: App) {
 		this.assets = new MRE.AssetContainer(this.app.context);
@@ -38,7 +40,7 @@ export default class Controls {
 		const skipForward = skip.findChildrenByName('SkipForward', false)[0];
 
 		// add labels
-		MRE.Actor.Create(this.app.context, {
+		this.speedLabel = MRE.Actor.Create(this.app.context, {
 			actor: {
 				name: 'label',
 				parentId: speed.id,
@@ -49,8 +51,8 @@ export default class Controls {
 					anchor: MRE.TextAnchorLocation.MiddleCenter
 				}
 			}
-		});
-		MRE.Actor.Create(this.app.context, {
+		}).text;
+		this.timeLabel = MRE.Actor.Create(this.app.context, {
 			actor: {
 				name: 'label',
 				parentId: skip.id,
@@ -61,15 +63,39 @@ export default class Controls {
 					anchor: MRE.TextAnchorLocation.MiddleCenter
 				}
 			}
-		});
+		}).text;
+		setInterval(() => {
+			console.log('updating time label');
+			this.timeLabel.contents = this.formatTime(this.player.playhead);
+		}, 250);
 
-		// add handlers
+		// add play/pause handler
 		this.addBehavior(playPause, this.assets.materials.find(m => m.name === 'PlayPause'), () => {
 			if (this.player.isPlaying) {
 				this.player.pause();
 			} else {
 				this.player.play();
 			}
+		});
+
+		// add speed button handlers
+		this.addBehavior(speedUp, this.assets.materials.find(m => m.name === 'SpeedUp'), () => {
+			this.player.speedMultiplier += 0.05;
+			this.speedLabel.contents = this.formatPercent(this.player.speedMultiplier);
+		});
+		this.addBehavior(speedDown, this.assets.materials.find(m => m.name === 'SpeedDown'), () => {
+			this.player.speedMultiplier -= 0.05;
+			this.speedLabel.contents = this.formatPercent(this.player.speedMultiplier);
+		});
+
+		// add seek handlers
+		this.addBehavior(skipForward, this.assets.materials.find(m => m.name === 'SkipForward'), () => {
+			this.player.playhead += 5;
+			this.timeLabel.contents = this.formatTime(this.player.playhead);
+		});
+		this.addBehavior(skipBack, this.assets.materials.find(m => m.name === 'SkipBack'), () => {
+			this.player.playhead -= 5;
+			this.timeLabel.contents = this.formatTime(this.player.playhead);
 		});
 	}
 
@@ -85,11 +111,11 @@ export default class Controls {
 	}
 
 	private addBehavior(actor: MRE.Actor, material: MRE.Material, callback: MRE.ActionHandler) {
-		let originalColor: MRE.Color4;
+		let originalColor = material.color.clone();
+		const highlightColor = MRE.Color3.Teal().toColor4(1);
 		actor.setBehavior(MRE.ButtonBehavior)
 			.onHover('enter', () => {
-				originalColor = material.color;
-				material.color = MRE.Color3.Teal().toColor4(1);
+				material.color = highlightColor;
 			})
 			.onHover('exit', () => {
 				material.color = originalColor;
