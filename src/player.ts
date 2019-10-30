@@ -15,9 +15,10 @@ export default class Player {
 		return this._playhead + offset;
 	}
 	public set playhead(val) {
+		const wasPlaying = this.isPlaying;
+		this.pause();
 		this._playhead = Math.max(0, Math.min(this.timeline.runtime, val));
-		this._basisTime = 0;
-		if (this.isPlaying) {
+		if (wasPlaying) {
 			this.play();
 		} else {
 			this.updateText(this.timeline.at(this._playhead));
@@ -27,9 +28,11 @@ export default class Player {
 	private _speedMultiplier = 1;
 	public get speedMultiplier() { return this._speedMultiplier; }
 	public set speedMultiplier(val) {
+		const wasPlaying = this.isPlaying;
+		this.pause();
 		this._speedMultiplier = Math.max(0.25, Math.min(4, val));
-		if (this.isPlaying) {
-			this.play(this.playhead);
+		if (wasPlaying) {
+			this.play();
 		}
 	}
 
@@ -143,6 +146,7 @@ export default class Player {
 	public pause(): void {
 		clearTimeout(this.updateTimeout);
 		this.updateTimeout = null;
+		this._playhead = this.playhead;
 		this._basisTime = 0;
 	}
 

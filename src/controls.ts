@@ -120,6 +120,6 @@ export default class Controls {
 			.onHover('exit', () => {
 				material.color = originalColor;
 			})
-			.onClick(callback);
+			.onButton('pressed', callback);
 	}
 }
