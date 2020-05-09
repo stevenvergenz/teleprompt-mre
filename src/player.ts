@@ -7,6 +7,16 @@ export default class Player {
 	private _playhead = 0;
 	/** The server timestamp when the current frame started */
 	private _basisTime = 0;
+	
+	private animRoot: MRE.Actor;
+	private lines: {
+		current: MRE.Actor,
+		next: MRE.Actor,
+		prev: MRE.Actor
+	};
+	private updateTimeout: NodeJS.Timeout = null;
+	private progressAnim: MRE.Animation;
+
 	public get playhead() {
 		let offset = 0;
 		if (this._basisTime > 0) {
@@ -42,25 +52,15 @@ export default class Player {
 
 	private get timeline() { return this.app.timeline; }
 
-	private animRoot: MRE.Actor;
-	private lines: {
-		current: MRE.Actor,
-		next: MRE.Actor,
-		prev: MRE.Actor
-	};
-	private updateTimeout: NodeJS.Timeout = null;
-
 	public constructor(private app: App, root?: MRE.Actor) {
 		const bgAssets = new MRE.AssetContainer(this.app.context);
-		MRE.Actor.CreatePrimitive(bgAssets, {
-			definition: {
-				shape: MRE.PrimitiveShape.Box,
-				dimensions: { x: 4, y: 0.6, z: 0.01 }
-			},
+		const bgBox = bgAssets.createBoxMesh('fullWidthBox', 4, 0.6, 0.01);
+		MRE.Actor.Create(this.app.context, {
 			actor: {
 				name: 'textBg',
 				parentId: root && root.id,
 				appearance: {
+					meshId: bgBox.id,
 					materialId: bgAssets.createMaterial('bgMat', {
 						color: MRE.Color3.DarkGray().toColor4(0.5),
 						alphaMode: MRE.AlphaMode.Blend
@@ -108,7 +108,43 @@ export default class Player {
 			})
 		};
 
-		this.timeline.loaded.then(() => this.updateText(this.timeline.at(0)));
+		const pBarStartSize = 0.02, pBarEndSize = 3.5;
+		const pBarStartScale = pBarStartSize / pBarEndSize;
+		const pBarStartPos = (pBarStartSize - pBarEndSize) / 2;
+		const progressBar = MRE.Actor.Create(this.app.context, { actor: {
+			name: "progressBar",
+			parentId: this.animRoot.id,
+			appearance: { meshId: bgAssets.createBoxMesh("progressBox", pBarEndSize, 0.015, 0.01).id },
+			transform: {
+				local: {
+					position: { x: pBarStartPos, y: -textTemplate.height / 2 },
+					scale: { x: pBarStartScale }
+				}
+			}
+		}});
+
+		const progressData = bgAssets.createAnimationData("progressData", { tracks: [{
+			target: MRE.ActorPath("bar").transform.local.position.x,
+			easing: MRE.AnimationEaseCurves.Linear,
+			keyframes: [
+				{ time: 0, value: pBarStartPos },
+				{ time: 1, value: 0 }
+			]
+		}, {
+			target: MRE.ActorPath("bar").transform.local.scale.x,
+			easing: MRE.AnimationEaseCurves.Linear,
+			keyframes: [
+				{ time: 0, value: pBarStartScale },
+				{ time: 1, value: 1 }
+			]
+		}]});
+		progressData.bind({ bar: progressBar }, { wrapMode: MRE.AnimationWrapMode.Loop, speed: 0, isPlaying: true })
+			.then(anim => this.progressAnim = anim)
+			.catch(err => MRE.log.error("app", err));
+
+		this.timeline.loaded
+			.then(() => this.updateText(this.timeline.at(0)))
+			.catch(err => MRE.log.error("app", err));
 	}
 
 	public play(): void;
@@ -138,6 +174,11 @@ export default class Player {
 				() => this.play(evt.next),
 				(evt.next.time - this._playhead) / this.speedMultiplier * 1000
 			);
+
+			if (this.progressAnim) {
+				this.progressAnim.speed = this.speedMultiplier / (evt.next.time - evt.time);
+				this.progressAnim.time = (this._playhead - evt.time) / (evt.next.time - evt.time);
+			}
 		} else {
 			this._basisTime = 0;
 		}
@@ -148,6 +189,10 @@ export default class Player {
 		this.updateTimeout = null;
 		this._playhead = this.playhead;
 		this._basisTime = 0;
+
+		if (this.progressAnim) {
+			this.progressAnim.speed = 0;
+		}
 	}
 
 	private updateText(evt: TimelineEvent) {

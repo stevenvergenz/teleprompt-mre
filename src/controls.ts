@@ -65,7 +65,6 @@ export default class Controls {
 			}
 		}).text;
 		setInterval(() => {
-			console.log('updating time label');
 			this.timeLabel.contents = this.formatTime(this.player.playhead);
 		}, 250);
 
