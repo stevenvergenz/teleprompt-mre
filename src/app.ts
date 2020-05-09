@@ -23,7 +23,7 @@ export default class App {
 		this.player = new Player(this);
 		this.controls = new Controls(this);
 
-		this.timeline.load('../public/test.md');
+		this.timeline.load(this.params.script as string || `file://${__dirname}/../public/declaration.txt`);
 	}
 
 	private userJoined(user: MRE.User) {

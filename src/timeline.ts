@@ -1,11 +1,12 @@
+import { URL } from 'url';
 import { promisify } from 'util';
 import { readFile } from 'fs';
 const readFileP = promisify(readFile);
-import { resolve } from 'path';
+import { extname } from 'path';
+import fetch from 'node-fetch';
 
-const timePerWord = 0.4;
-const timePerPunctuation = 0.1;
-const lineLength = 40;
+import plaintextParser from './parsers/plaintext';
+import srtParser from './parsers/subtitle';
 
 export type TimelineEvent = {
 	time: number;
@@ -13,6 +14,8 @@ export type TimelineEvent = {
 	next?: TimelineEvent;
 	prev?: TimelineEvent;
 };
+
+export type TimelineParser = (content: string) => TimelineEvent[];
 
 export class Timeline {
 	private timeline: TimelineEvent[] = [];
@@ -30,51 +33,41 @@ export class Timeline {
 		});
 	}
 
-	public load(path: string) {
-		this._load(path)
-			.then(this.loadResolvedCallback)
+	public load(uri: string) {
+		this._load(uri)
+			.then(() => this.loadResolvedCallback())
 			.catch(this.loadRejectedCallback);
 		return this.loaded;
 	}
 
-	private async _load(path: string) {
-		const rawScript = await readFileP(
-			resolve(__dirname, path), { encoding: 'utf8' });
-		const words = rawScript.split(/\s+/);
-
-		let line = '';
-		let lineDuration = 0;
-		let lastEvent: TimelineEvent;
-		for (const word of words) {
-			if (line.length + word.length + 1 >= lineLength) {
-				const newEvent = { time: this.runtime, line } as TimelineEvent;
-				this.timeline.push(newEvent);
-				this.runtime += lineDuration;
-				if (lastEvent) {
-					newEvent.prev = lastEvent;
-					lastEvent.next = newEvent;
-				}
-
-				line = '';
-				lineDuration = 0;
-				lastEvent = newEvent;
-			}
-
-			line += line.length === 0 ? word : (' ' + word);
-			lineDuration += timePerWord;
-
-			if (/[.,;!?]/.test(word)) {
-				lineDuration += timePerPunctuation;
-			}
+	private async _load(uri: string) {
+		const url = new URL(uri);
+		let contents: string;
+		switch (url.protocol) {
+			case 'file:':
+				contents = await readFileP(uri.slice(7), { encoding: 'utf8' });
+				break;
+			case 'http:':
+			case 'https:':
+				contents = await (await fetch(url)).text();
+				break;
+			default:
+				throw new Error(`Don't know how to load ${uri}`);
 		}
 
-		const newEvent = { time: this.runtime, line } as TimelineEvent;
-		this.timeline.push(newEvent);
-		this.runtime += lineDuration;
-		if (lastEvent) {
-			newEvent.prev = lastEvent;
-			lastEvent.next = newEvent;
+		let parser: TimelineParser;
+		switch (extname(url.pathname)) {
+			case '.srt':
+			case '.vtt':
+				parser = srtParser;
+				break;
+			default:
+				parser = plaintextParser;
+				break;
 		}
+		
+		this.timeline = parser(contents);
+		this.runtime = this.timeline[this.timeline.length - 1].time;
 	}
 
 	public at(time: number) {

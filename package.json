@@ -17,10 +17,14 @@
 	"author": "Steven Vergenz",
 	"license": "MIT",
 	"dependencies": {
-		"@microsoft/mixed-reality-extension-sdk": "^0.17.1"
+		"@microsoft/mixed-reality-extension-sdk": "^0.17.1",
+		"node-fetch": "^2.6.0",
+		"subtitle": "^2.0.3"
 	},
 	"devDependencies": {
 		"@types/node": "^12.7.7",
+		"@types/node-fetch": "^2.5.7",
+		"@types/subtitle": "^2.0.2",
 		"typescript": "^3.7.1-rc"
 	}
 }
