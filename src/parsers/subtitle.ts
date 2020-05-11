@@ -9,23 +9,10 @@ export default function parseSubtitle(contents: string) {
 	let prevSrtLine: subTitleType;
 
 	for (const srtLine of srtLines) {
-		let lineStart = 0;
-		if (typeof(srtLine.start) === 'string') {
-			lineStart = toMS(srtLine.start) / 1000;
-		} else {
-			lineStart = srtLine.start / 1000;
-		}
+		const prevLineEnd = prevSrtLine ? toSeconds(prevSrtLine.end) : 0;
+		const lineStart = toSeconds(srtLine.start);
 
-		let prevLineEnd = 0;
-		if (prevSrtLine) {
-			if (typeof(prevSrtLine.end) === 'string') {
-				prevLineEnd = toMS(prevSrtLine.end) / 1000;
-			} else {
-				prevLineEnd = prevSrtLine.end / 1000;
-			}
-		}
-
-		if (prevLineEnd < lineStart) {
+		if (prevLineEnd < (lineStart - 1)) {
 			const gapLine: TimelineEvent = {
 				line: "---",
 				time: prevLineEnd,
@@ -38,19 +25,52 @@ export default function parseSubtitle(contents: string) {
 			prevLine = gapLine;
 		}
 
-		const curLine: TimelineEvent = {
-			line: srtLine.text,
-			time: lineStart,
-			prev: prevLine
-		};
-		if (prevLine) {
-			prevLine.next = curLine;
+		const totalDuration = toSeconds(srtLine.end) - lineStart;
+		let timingOffset = 0;
+		for (const wrappedLine of wrapText(srtLine.text)) {
+			const curLine: TimelineEvent = {
+				line: wrappedLine,
+				time: lineStart + timingOffset,
+				prev: prevLine
+			};
+			if (prevLine) {
+				prevLine.next = curLine;
+			}
+			timeline.push(curLine);
+			prevLine = curLine;
+			timingOffset += totalDuration * (wrappedLine.length + 1) / srtLine.text.length;
 		}
-
-		timeline.push(curLine);
-		prevLine = curLine;
 		prevSrtLine = srtLine;
 	}
 
 	return timeline;
+}
+
+function wrapText(text: string): string[] {
+	const wrapLength = 40;
+	if (text.length <= wrapLength) {
+		return [text.replace(/\s+/, ' ')];
+	}
+
+	const lines: string[] = [];
+	let fitLine = "";
+	for (const word of text.split(/\s+/)) {
+		if (fitLine.length + word.length <= wrapLength) {
+			fitLine += ` ${word}`;
+		} else {
+			lines.push(fitLine);
+			fitLine = word;
+		}
+	}
+
+	lines.push(fitLine);
+	return lines;
+}
+
+function toSeconds(timestamp: string | number): number {
+	if (typeof(timestamp) === 'string') {
+		return toMS(timestamp) / 1000;
+	} else {
+		return timestamp / 1000;
+	}
 }
