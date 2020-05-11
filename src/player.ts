@@ -181,6 +181,9 @@ export default class Player {
 			}
 		} else {
 			this._basisTime = 0;
+			if (this.progressAnim) {
+				this.progressAnim.speed = 0;
+			}
 		}
 	}
 
